@@ -6,6 +6,7 @@ import numpy as np
 from qibo import gates
 from qibo.models import Circuit
 
+from qibo.models.encodings import ghz_state
 
 class State:
     def __init__(self, nqubits):
@@ -141,3 +142,11 @@ if __name__ == '__main__':
 
     print(state.get_state_vector())
     print(state.get_state_matrix())
+
+    ghzST = ghz_state(nqubits)
+
+    print(state.circuit.draw())
+    print(ghzST.draw())
+
+    print(state.get_state_vector())
+    print(ghzST.execute().state())

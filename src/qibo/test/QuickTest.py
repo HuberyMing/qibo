@@ -9,6 +9,8 @@ from qibo.models import Circuit
 
 #from qibo import Circuit, gates
 
+import re
+
 
 def create_measurement_circuits(circuit, labels, label_format="little_endian"):
     """
@@ -115,7 +117,7 @@ def execute_measurement_circuits(
 
 
 
-example = 3
+example = 31
 if example == 0:
     # create a circuit for N=3 qubits
     circuit = models.Circuit(3)
@@ -202,15 +204,51 @@ elif example == 2:
     cx: 2
     ccx: 1
     '''
+elif example == 31:         #  adding measurements in mutli-qubits
+    nqubits = 5
+    c = Circuit(nqubits)
+    c.add(gates.X(0))
+    c.add(gates.X(4))
+    #c.add(gates.M(0, 1, register_name="A"))
+    #c.add(gates.M(0, 1, basis=gates.X, register_name="A"))
+    #c.add(gates.M(0, 1, basis=gates.Y, register_name="A"))
+    #c.add(gates.M(3, 4, register_name="B"))
+
+
+    #c.add(gates.M(0, 1, basis=gates.Y))
+    #c.add(gates.M(3, 4))
+
+    label  = "ZIXX"
+    Arr0 = [m.start() for m in re.finditer('X', label)]
+    #Arr0 = [m.start() for m in re.finditer('Y', label)]
+    #Arr0 = []
+
+    Arr1 = range(2,4)
+    Arr2 = (1,4,3)
+
+    probe_circuit = Circuit(nqubits)
+
+    probe_circuit.add(gates.M(*Arr0, basis=gates.X))
+    #probe_circuit.add(gates.M(*Arr0))
+    #probe_circuit.add(gates.M(*range(3,4)))
+
+    c.draw()
+    probe_circuit.draw()
+
+    print(' -------  add circuit ------')
+    NewC = c + probe_circuit  # if c measured --> KeyError: 'Register register0 already exists in circuit.'
+    NewC.draw()
 
 elif example == 3:
     c = Circuit(5)
     c.add(gates.X(0))
     c.add(gates.X(4))
-    c.add(gates.M(0, 1, register_name="A"))
+    #c.add(gates.M(0, 1, register_name="A"))
+    #c.add(gates.M(0, 1, basis=gates.X, register_name="A"))
+    c.add(gates.M(0, 1, basis=gates.Y, register_name="A"))
     c.add(gates.M(3, 4, register_name="B"))
 
-    c.display()
+    c.draw()
 
     result = c(nshots=100)
 
@@ -220,7 +258,7 @@ elif example == 3:
     print(result.frequencies(binary=True))
     print(result.frequencies(binary=False))
 
-    c.display()
+    c.draw()
     print()
     print(result)
     print(result.state())       #  same as  result2.to_dict()["state"]
@@ -244,7 +282,8 @@ elif example == 4:              #  GHZ state
     #measurement_circuits, measurement_circuit_names = create_measurement_circuits(circuit, labels)
     data_dict_list = execute_measurement_circuits(circuit, labels)
 
-    #circuit.display()
+    #circuit.display()   # AttributeError: 'Circuit' object has no attribute 'display'
+    circuit.draw()
     #result = circuit(nshots=100)
 
 elif example == 5:      # How to collapse state during measurements?

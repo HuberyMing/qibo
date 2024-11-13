@@ -3,6 +3,9 @@ import numpy as np
 from qibo import gates
 from qibo.models import Circuit
 
+import re
+
+
 def create_measurement_circuits(circuit, labels, circuit_name = 'GHZ', label_format="little_endian"):
     """
     Prepares measurement circuits
@@ -104,6 +107,24 @@ def GHZstate(nqubits):
 
     return circuit, circuit_name
 
+def Pauli_Measure_circuit(label):
+    posI = [m.start() for m in re.finditer('I', label)]
+    posX = [m.start() for m in re.finditer('X', label)]
+    posY = [m.start() for m in re.finditer('Y', label)]
+    posZ = [m.start() for m in re.finditer('Z', label)]
+
+    probe_circuit = Circuit(nqubits)
+    if len(posI) > 0:
+        probe_circuit.add(gates.M(*posI))
+    if len(posX) > 0:
+        probe_circuit.add(gates.M(*posX, basis=gates.X))
+    if len(posY) > 0:
+        probe_circuit.add(gates.M(*posY, basis=gates.Y))
+    if len(posZ) > 0:
+        probe_circuit.add(gates.M(*posZ, basis=gates.Z))
+
+    return probe_circuit
+
 
 if __name__ == '__main__':
 
@@ -111,8 +132,23 @@ if __name__ == '__main__':
     circuit, circuit_name = GHZstate(nqubits)
 
     labels = ["YXY", "IXX", "ZYI", "XXX", "YZZ"]
-    #measurement_circuits, measurement_circuit_names = create_measurement_circuits(circuit, labels)
-    data_dict_list = execute_measurement_circuits(circuit, labels, circuit_name)
+
+    measurement_circuits, measurement_circuit_names = create_measurement_circuits(circuit, labels)
+    #data_dict_list = execute_measurement_circuits(circuit, labels, circuit_name)
+
+
+    num_shots = 100
+
+    for label in labels:
+        probe_circuit = Pauli_Measure_circuit(label)   
+        Measure_Circ = circuit + probe_circuit
+
+        result = Measure_Circ(nshots=num_shots)
+        count_dict = result.frequencies()
+    
+        Measure_Circ.draw()
+        print(count_dict)
+
 
     statevec  = get_state_vector(circuit)
     DenMat    = get_state_matrix(circuit)
