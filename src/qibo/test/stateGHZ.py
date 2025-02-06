@@ -223,12 +223,51 @@ def shot_measure_to_PauliCoef(circuit, labels, num_shots):
     return measurement_list
 
 
+def qibochem_measure_expectation(circuit, lab_list, num_shots):
+    """ Use qibochem.measurement package to get the expecation values 
+        of given list of Pauli terms for a particular given circuit 
+
+    Args:
+        circuit (circuit): the circuit generating the state
+        lab_list (list): list of list, each list element of which is 
+                a list referring the Pauli [I, X, Y, Z] in qubit order
+        
+            (eg) lab_list = [[2,1,2], [0,1,1], [3,2,0], [1,1,1], [2,3,3]]
+                means Pauli terms  ["YXY", "IXX", "ZYI", "XXX", "YZZ"]
+        num_shots (int): number of shot measurements
+                
+    Returns:
+        list (coef_Pauli_exact): list of exact expectation value of Pauli Terms
+        list (coef_Pauli_shots): list of Pauli expectation from shot measurements
+    """
+    from functools import reduce
+    from qibo.hamiltonians import SymbolicHamiltonian
+    from qibo.symbols import I, X, Y, Z
+    from qibochem.measurement import expectation, expectation_from_samples
+
+    Ps = [I, X, Y, Z]
+
+    _circuit = circuit.copy()
+    coef_Pauli_exact = []       # list of exact expectation value of Pauli Terms
+    coef_Pauli_shots = []       # list of Pauli expectation from shot measurements
+    for PauliID in lab_list:
+        PauliQwise = [Ps[idx](ii) for ii, idx in enumerate(PauliID)]
+        PauliTerm  = SymbolicHamiltonian(reduce(lambda x, y: x*y, PauliQwise))
+
+        coef_Pauli_exact.append(expectation(_circuit, PauliTerm))   
+        coef_Pauli_shots.append(expectation_from_samples(_circuit, PauliTerm, n_shots=num_shots))
+
+    return coef_Pauli_exact, coef_Pauli_shots
+
+
 if __name__ == '__main__':
 
     nqubits = 3
     circuit, circuit_name = GHZstate(nqubits)
     circ_ghz = ghz_state(nqubits)
 
+    lab_list = [[2,1,2], [0,1,1], [3,2,0], [1,1,1], [2,3,3]]
+    
     labels = ["YXY", "IXX", "ZYI", "XXX", "YZZ"]
     num_shots = 100
 
@@ -238,7 +277,10 @@ if __name__ == '__main__':
     measurement_list1a = shot_measure_to_PauliCoef(circuit, labels, num_shots)
     measurement_list1b = shot_measure_to_PauliCoef(circ_ghz, labels, num_shots)
 
-
-
     statevec  = get_state_vector(circuit)
     DenMat    = get_state_matrix(circuit)
+
+
+    coef_Pauli_exact, coef_Pauli_shots = qibochem_measure_expectation(circ_ghz, lab_list, num_shots)
+    print(coef_Pauli_exact)
+    print(coef_Pauli_shots)
